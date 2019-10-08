@@ -1,0 +1,90 @@
+import requests
+import json
+import bs4
+import pandas as pd
+import time
+import urllib3
+import random
+
+
+
+
+def getLATLNG(address):
+
+    ak1 = "FqCUFShrOFPnwv3cfaXiyemEsPXfLZGq"
+    ak2 = "63NO2qsW45jf9iIZEnHhxSqxM13oukr5"
+    ak3 = "1dr9eSh6qwpPVYIMDHs9vqOCjlOAOctQ"
+    ak4 = "IsHsH9hXOKaXZHNAPjxC6WO590qBWt9n"
+    ak_list = [ak1, ak2, ak3, ak4]
+    ak = random.choice(ak_list)
+
+    # print(ak)
+    url = "http://api.map.baidu.com/geocoding/v3/?address="
+    output = "json"
+    # address = "上海市闵行区申贵路1599弄"
+
+    url2 = url + address + "&output" + output + "&ak=" + ak
+
+    response = requests.get(url2)
+    # response = grequests.get(url2, timeout = None)
+    # if response.status_code != 200:
+    #     time.sleep(5)
+    # print(response.status_code)
+    temp = response.content.decode()
+
+    soup = bs4.BeautifulSoup(temp, "lxml")
+
+    response.close()
+
+    if soup.findAll("lat"):
+        LAT = soup.find("lat").get_text()
+        LNG = soup.find("lng").get_text()
+        result = [address.strip("\n"), LAT, LNG]
+        return result
+    else:
+        return [address.strip("\n"), "---------SORRY", "NO RESULT--------"]
+
+
+# print(LAT)
+clicker  = 0
+latlng = []
+
+filePath = "C:/WorkFolder/Destination charging Heatmap/NO LATLNG.csv"
+with open(filePath, encoding="utf8") as file:
+     time_start = time.clock()
+     file_line = file.readline()
+     # len_1 = len(file_line)
+     # print(len_1)
+     # length  = len(file_line)
+     for line in file:
+         # print(line)
+         # if len(getLATLNG(line)) >2:
+         temp_latlng = getLATLNG(line)
+         # else:
+         #     break
+
+         # if len(temp_latlng) > 1:
+         #     pass
+         #     print(temp_latlng)
+         # else:
+         #     break
+         latlng.append(temp_latlng)
+         clicker +=1
+         # len_1 -= clicker
+         print(clicker,(time.clock()-time_start), latlng[-1:])
+         # if clicker >165:
+         #     break
+# print(latlng)
+dataframe_latlng = pd.DataFrame(latlng, columns =["locAdd","latResult", "lngResult"])
+# print(dataframe_latlng.head(n=10))
+
+
+dataframe = pd.read_csv(filePath, encoding= 'utf8', names= ["locationAddress"])
+# dataframe.columns = ["locationAddress"]
+# print(dataframe.head())
+print("用时：", (time.clock() - time_start)/60," 分钟")
+# moving_data = dataframe.pop("locationAddress")
+# print(moving_data)
+# dataframe_latlng.insert(0,"locationAddress",moving_data)
+# print(dataframe_latlng)
+dataframe_latlng.to_csv("C:/WorkFolder/Destination charging Heatmap/LATresult.csv", encoding="utf8")
